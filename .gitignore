@@ -1,5 +1,5 @@
 .vscode
-build
+/build*/
 *.a
 *.o
 *.dylib
@@ -13,9 +13,6 @@ build
 Xcode
 bin
 lib
-ThirdParties/Eigen/eigen-3.4.0
-ThirdParties/spdlog/spdlog-1.15.3
-ThirdParties/autodiff/autodiff
 doxygen/docs
 .idea
 cmake-build-debug

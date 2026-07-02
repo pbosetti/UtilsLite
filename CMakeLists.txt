@@ -66,30 +66,25 @@ endif()
 message( STATUS "Compiler used: ${CMAKE_CXX_COMPILER_ID}" )
 message( STATUS "BASE SUFFIXES = ${ARTIFACTS_STATIC_SUFFIX} ${ARTIFACTS_DYNAMIC_SUFFIX}" )
 
-# Run rake
-find_program(RAKE_EXECUTABLE NAMES rake rake.bat)
-if(RAKE_EXECUTABLE)
-  message( STATUS "Execute rake install for ThirdParties" )
-  if (UNIX)
-    execute_process(
-      COMMAND "${RAKE_EXECUTABLE}" install_3rd
-      WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-      COMMAND_ECHO STDOUT
-      RESULT_VARIABLE RAKE_RESULT
-    )
-  else()
-    execute_process(
-      COMMAND cmd /c "${RAKE_EXECUTABLE}" install_3rd
-      WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-      COMMAND_ECHO STDOUT
-      RESULT_VARIABLE RAKE_RESULT
-    )
-  endif()
-  if(NOT RAKE_RESULT EQUAL 0)
-    message(FATAL_ERROR "rake install_3rd failed with exit code ${RAKE_RESULT}")
-  endif()
+# Third-party headers are vendored under src/Utils/3rd and committed to the
+# repository, so the normal build (including consumption via FetchContent)
+# needs no downloads and no external tools. Maintainers can regenerate them
+# from upstream with:  cmake -B build -DUTILS_UPDATE_3RDPARTY=ON
+option( UTILS_UPDATE_3RDPARTY "Download and regenerate vendored 3rd-party headers in src/Utils/3rd" OFF )
+
+if( CMAKE_VERSION VERSION_GREATER_EQUAL 3.21 )
+  set( _utils_is_top_level ${PROJECT_IS_TOP_LEVEL} )
 else()
-  message( STATUS "rake not found; using vendored ThirdParties headers already present in src/Utils/3rd" )
+  if( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR )
+    set( _utils_is_top_level TRUE )
+  else()
+    set( _utils_is_top_level FALSE )
+  endif()
+endif()
+
+if( UTILS_UPDATE_3RDPARTY AND _utils_is_top_level )
+  include( "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Update3rdParties.cmake" )
+  utils_update_3rdparties()
 endif()
 
 # Source dir
@@ -316,7 +311,6 @@ foreach(target IN LISTS all_targets)
        type STREQUAL "MODULE_LIBRARY" OR
        type STREQUAL "OBJECT_LIBRARY")
       target_include_directories(${target} SYSTEM PRIVATE ${CMAKE_SOURCE_DIR}/src/Utils/3rd)
-      target_include_directories(${target} SYSTEM PRIVATE ${CMAKE_SOURCE_DIR}/lib/include/Utils/3rd)
     endif()
   endif()
 endforeach()
