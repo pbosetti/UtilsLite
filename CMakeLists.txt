@@ -35,6 +35,16 @@ set( CMAKE_CXX_STANDARD_REQUIRED ON )
 set( CMAKE_CXX_STANDARD          17 )
 
 include( "${HOME}/CMakeLists-cflags.txt" )
+
+if( CMAKE_CXX_COMPILER_ID MATCHES "Clang|AppleClang" )
+  string(REPLACE "-Wreturn-local-addr" "-Wreturn-stack-address" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+
+  if( CMAKE_SYSTEM_NAME STREQUAL "Linux" )
+    string(REPLACE "-stdlib=libc++ " "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+    string(REPLACE " -stdlib=libc++" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+  endif()
+endif()
+
 include( "${HOME}/CMakeLists-utilities.txt" )
 
 if( CMAKE_CXX_COMPILER_ID MATCHES "Clang|AppleClang" )
@@ -57,19 +67,29 @@ message( STATUS "Compiler used: ${CMAKE_CXX_COMPILER_ID}" )
 message( STATUS "BASE SUFFIXES = ${ARTIFACTS_STATIC_SUFFIX} ${ARTIFACTS_DYNAMIC_SUFFIX}" )
 
 # Run rake
-message( STATUS "Execute rake install for ThirdParties" )
-if (UNIX)
-  execute_process(
-    COMMAND bash "-c" "rake install_3rd"
-    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-    COMMAND_ECHO STDOUT
-  )
+find_program(RAKE_EXECUTABLE NAMES rake rake.bat)
+if(RAKE_EXECUTABLE)
+  message( STATUS "Execute rake install for ThirdParties" )
+  if (UNIX)
+    execute_process(
+      COMMAND "${RAKE_EXECUTABLE}" install_3rd
+      WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+      COMMAND_ECHO STDOUT
+      RESULT_VARIABLE RAKE_RESULT
+    )
+  else()
+    execute_process(
+      COMMAND cmd /c "${RAKE_EXECUTABLE}" install_3rd
+      WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+      COMMAND_ECHO STDOUT
+      RESULT_VARIABLE RAKE_RESULT
+    )
+  endif()
+  if(NOT RAKE_RESULT EQUAL 0)
+    message(FATAL_ERROR "rake install_3rd failed with exit code ${RAKE_RESULT}")
+  endif()
 else()
-  execute_process(
-    COMMAND cmd /c "rake install_3rd"
-    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-    COMMAND_ECHO STDOUT
-  )
+  message( STATUS "rake not found; using vendored ThirdParties headers already present in src/Utils/3rd" )
 endif()
 
 # Source dir
