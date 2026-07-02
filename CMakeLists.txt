@@ -12,15 +12,14 @@ endif()
 
 project( UtilsLite )
 
-if (IS_DIRECTORY "${PROJECT_SOURCE_DIR}/cmake_utils")
-  set( HOME "${PROJECT_SOURCE_DIR}/cmake_utils/" )
-else()
-  if (IS_DIRECTORY "${PROJECT_SOURCE_DIR}/../cmake_utils")
-    set( HOME "${PROJECT_SOURCE_DIR}/../cmake_utils/" )
-  else()
-    set( HOME "${PROJECT_SOURCE_DIR}/../../cmake_utils/" )
-  endif()
-endif()
+include(FetchContent)
+FetchContent_Declare(
+  cmake_utils
+  GIT_REPOSITORY https://github.com/ebertolazzi/cmake_utils.git
+  GIT_TAG        e8c50a2eda739e569dde5d2851ac713e28ddc9f3
+)
+FetchContent_MakeAvailable( cmake_utils )
+set( HOME "${cmake_utils_SOURCE_DIR}/" )
 
 include( "${HOME}/CMakeLists-common.txt" )
 
